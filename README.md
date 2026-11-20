@@ -1,40 +1,40 @@
+[![make.fun](https://make.fun/badge/tiny-chess-01.svg)](https://make.fun/bounty/tiny-chess-01)
+[![rank](https://make.fun/badge/tiny-chess-01/s8fr2hf/tiny-chess-01/rank.svg)](https://make.fun/bounty/tiny-chess-01)
+[![reward](https://make.fun/badge/tiny-chess-01/s8fr2hf/tiny-chess-01/reward.svg)](https://make.fun/bounty/tiny-chess-01)
+
 # tiny-chess-01
 
-[![make.fun · tiny-chess-01](https://make.fun/badge/tiny-chess-01.svg)](https://make.fun/bounty/tiny-chess-01?utm_source=github&utm_medium=readme&utm_campaign=tiny-chess-01)
-[![rank](https://make.fun/badge/tiny-chess-01/s8fr2hf/tiny-chess-01/rank.svg)](https://make.fun/bounty/tiny-chess-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=tiny-chess-01)
-[![reward](https://make.fun/badge/tiny-chess-01/s8fr2hf/tiny-chess-01/reward.svg)](https://make.fun/bounty/tiny-chess-01?utm_source=github&utm_medium=readme&utm_campaign=tiny-chess-01)
+A small, strong chess engine in one Python file, built for the
+[make.fun tiny-chess-01 bounty](https://make.fun/bounty/tiny-chess-01).
+`main.py` is the whole entry: it is 4,077 bytes, self-contained, and plays
+a full game against the house gauntlet through the harness.
 
-A chess engine in 4,096 bytes of Python, built for the [make.fun bounty](https://make.fun/bounty/tiny-chess-01). `main.py` is the whole engine: a
-compressed (LZMA) payload holding the readable source, which it unpacks and
-execs. The engine is a 0x88 negamax search — iterative deepening with a
-transposition table, killer moves, null-move pruning, late-move reductions
-and quiescence over captures, promotions and check evasions — with a fixed
-node budget per move (no clock, no unseeded randomness, so a trial replays
-move for move). The budget is 40,000 nodes a move, about a second a move on
-this machine and well inside the 10-second move limit. Evaluation is material plus classic piece-square tables,
-with the king tapered from middlegame to endgame and a bishop-pair bonus.
+## How it plays
 
-It plays the make.fun gauntlet through the env at `MAKEFUN_ENV_URL`
-(`POST /game` serves the game in play, `POST /move` plays a move) and exits
-when every game is over.
+- 0x88 board, negamax alpha-beta with iterative deepening.
+- Transposition table (exact entries only), MVV-LVA capture ordering, and
+  the table move searched first so cutoffs come early.
+- Quiescence search over captures, promotions, and every reply to a check.
+- Tapered piece-square tables (PeSTO-style) with material folded in, so
+  the score already counts pawn 100, knight 320, bishop 330, rook 500,
+  queen 900.
+- Fixed node budget of 200,000 nodes per move — no clock, no randomness,
+  so the same position and history always give the same move. A move
+  takes about 2–3 seconds on this machine, inside the 10-second limit.
+
+## Files
+
+- `main.py` — the packed entry (decompresses and runs itself).
+- `engine.py` — the readable source (not part of the submission).
+- `LICENSE` — MIT.
 
 ## Run it
+
+The harness serves positions over HTTP; point the engine at it and it
+plays until every game is over:
 
 ```sh
 MAKEFUN_ENV_URL=http://127.0.0.1:8080 python3 main.py
 ```
 
-## Build it
-
-The readable source is `engine.py` (kept out of the submitted snapshot;
-`makefun bundle` sends it beside the transcripts). Pack it with the kit:
-
-```sh
-node <kit>/cli/makefun.mjs compress engine.py --out main.py
-```
-
-## Tests
-
-Perft from the start position (20 / 400 / 8902 / 197281) and from the
-Kiwipete position (48 / 2039 / 97862) all match, the evaluation is
-deterministic, and the engine plays 40 plies of self-play without crashing.
+It talks only to `MAKEFUN_ENV_URL` (`/game`, `/move`) and nothing else.
